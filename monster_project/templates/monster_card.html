@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐉 Коллекция монстров | Магический бестиарий</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            cursor: pointer;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1.2rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 25px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .monsters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .monster-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .monster-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .monster-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .monster-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .monster-info {
+            padding: 1.5rem;
+        }
+
+        .monster-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .rare-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 0.3rem 1rem;
+            background: #e0e0e0;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 0.5rem 0;
+        }
+
+        .stat-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .stat-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.3rem;
+            text-align: center;
+            font-size: 0.8rem;
+            transition: width 0.5s;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #f5576c;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            z-index: 3000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #4caf50;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="showPage('home')">🐉 Monster Collection</div>
+            <div class="nav-links">
+                <button class="nav-btn active" onclick="showPage('home')">Главная</button>
+                <button class="nav-btn" onclick="showPage('monsters')">Монстры</button>
+                <button class="nav-btn" onclick="showPage('create')">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="home" class="page active">
+            <div class="hero">
+                <h1>🐉 Добро пожаловать в мир монстров!</h1>
+                <p>Откройте для себя удивительных существ, соберите свою коллекцию</p>
+                <button class="btn btn-primary" onclick="showPage('monsters')">Посмотреть коллекцию →</button>
+            </div>
+            <div class="stats" id="stats"></div>
+        </div>
+
+        <div id="monsters" class="page">
+            <h2 style="color: white; margin-bottom: 1rem;">🐉 Наша коллекция монстров</h2>
+            <div id="monstersGrid" class="monsters-grid"></div>
+        </div>
+
+        <div id="create" class="page">
+            <div class="form-container">
+                <h2 style="text-align: center; margin-bottom: 2rem; color: #667eea;">✨ Создать нового монстра</h2>
+                <form id="monsterForm">
+                    <div class="form-group">
+                        <label>Имя монстра *</label>
+                        <input type="text" id="name" required placeholder="Например: Огненный дракон">
+                    </div>
+                    <div class="form-group">
+                        <label>Тип *</label>
+                        <select id="type" required>
+                            <option value="огненный">🔥 Огненный</option>
+                            <option value="ледяной">❄️ Ледяной</option>
+                            <option value="природный">🌿 Природный</option>
+                            <option value="темный">🌑 Темный</option>
+                            <option value="светлый">✨ Светлый</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Сила (1-100) *</label>
+                        <input type="number" id="power" min="1" max="100" required value="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Здоровье (1-1000) *</label>
+                        <input type="number" id="hp" min="1" max="1000" required value="300">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="isRare"> Редкий монстр ⭐</label>
+                    </div>
+                    <div class="form-group">
+                        <label>URL картинки (из интернета)</label>
+                        <input type="url" id="imageUrl" placeholder="https://cdn-icons-png.flaticon.com/512/1998/1998617.png">
+                        <small style="color: #666;">Вставьте ссылку на картинку или оставьте пустым для эмодзи</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <textarea id="description" rows="3" placeholder="Опишите своего монстра..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Создать монстра ✨</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="monsterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalName">Монстр</h2>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="deleteMonsterFromModal()">Удалить</button>
+                <button class="btn btn-primary" onclick="closeModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let monsters = [];
+        let nextId = 1;
+        let currentMonsterId = null;
+
+        function loadData() {
+            // Очищаем localStorage чтобы загрузить всех монстров
+            // Раскомментируйте следующую строку чтобы сбросить данные:
+            // localStorage.removeItem('monsters_collection');
+
+            const saved = localStorage.getItem('monsters_collection');
+            if (saved) {
+                const data = JSON.parse(saved);
+                monsters = data.monsters;
+                nextId = data.nextId;
+                console.log('Загружено из localStorage:', monsters.length, 'монстров');
+            } else {
+                initDefaultMonsters();
+                console.log('Создано новых монстров:', monsters.length);
+            }
+            updateStats();
+            renderMonsters();
+        }
+
+        function initDefaultMonsters() {
+            // ВСЕ 9 МОНСТРОВ С КАРТИНКАМИ
+            monsters = [
+                {
+                    id: 1,
+                    name: "Огненный дракон",
+                    type: "огненный",
+                    power: 95,
+                    hp: 800,
+                    isRare: true,
+                    image: "https://ru.pngtree.com/freepng/fiery-dragon-illustration-isolated-on-transparent-background_21232296.html",
+                    description: "Древний дракон, дышащий огнём. Обитает в вулканах и охраняет древние сокровища."
+                },
+                {
+                    id: 2,
+                    name: "Искорка",
+                    type: "огненный",
+                    power: 45,
+                    hp: 200,
+                    isRare: false,
+                    image: "🔥",
+                    description: "Маленькая огненная милашка. Очень дружелюбна, но может обжечься."
+                },
+                {
+                    id: 3,
+                    name: "Волшебный Феникс",
+                    type: "огненный",
+                    power: 88,
+                    hp: 450,
+                    isRare: true,
+                    image: "https://cdn-icons-png.flaticon.com/512/616/616408.png",
+                    description: "Волшебная птица из магического огня. Возрождается из пепла."
+                },
+                {
+                    id: 4,
+                    name: "Ледяной великан",
+                    type: "ледяной",
+                    power: 85,
+                    hp: 600,
+                    isRare: true,
+                    image: "❄️",
+                    description: "Огромный великан из вечных льдов. Обитает в северных горах."
+                },
+                {
+                    id: 5,
+                    name: "Снежинка",
+                    type: "ледяной",
+                    power: 30,
+                    hp: 150,
+                    isRare: false,
+                    image: "❄️",
+                    description: "Маленькое ледяное создание, приносящее холод."
+                },
+                {
+                    id: 6,
+                    name: "Лесной волк",
+                    type: "природный",
+                    power: 75,
+                    hp: 320,
+                    isRare: false,
+                    image: "https://cdn-icons-png.flaticon.com/512/1998/1998625.png",
+                    description: "Благородный лесной волк, защитник древних лесов."
+                },
+                {
+                    id: 7,
+                    name: "Лесной дух",
+                    type: "природный",
+                    power: 70,
+                    hp: 350,
+                    isRare: false,
+                    image: "🌿",
+                    description: "Дух леса, защитник природы."
+                },
+                {
+                    id: 8,
+                    name: "Волшебный единорог",
+                    type: "светлый",
+                    power: 82,
+                    hp: 500,
+                    isRare: true,
+                    image: "https://cdn-icons-png.flaticon.com/512/1998/1998628.png",
+                    description: "Мифическое существо с целебным рогом. Приносит удачу."
+                },
+                {
+                    id: 9,
+                    name: "Темный рыцарь",
+                    type: "темный",
+                    power: 90,
+                    hp: 700,
+                    isRare: true,
+                    image: "🌑",
+                    description: "Загадочный рыцарь в черных доспехах. Появляется только в ночное время."
+                }
+            ];
+            nextId = 10;
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('monsters_collection', JSON.stringify({
+                monsters: monsters,
+                nextId: nextId
+            }));
+        }
+
+        function updateStats() {
+            const total = monsters.length;
+            const rare = monsters.filter(m => m.isRare).length;
+            const avgPower = Math.round(monsters.reduce((sum, m) => sum + m.power, 0) / total);
+
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card"><div class="stat-number">${total}</div><div>Всего монстров</div></div>
+                <div class="stat-card"><div class="stat-number">${rare}</div><div>Редких монстров</div></div>
+                <div class="stat-card"><div class="stat-number">${avgPower}</div><div>Средняя сила</div></div>
+            `;
+        }
+
+        function renderMonsterImage(monster) {
+            if (monster.image && (monster.image.startsWith('http') || monster.image.startsWith('data'))) {
+                return `<img src="${monster.image}" alt="${monster.name}" onerror="this.parentElement.innerHTML='🐉'">`;
+            } else {
+                return `<div style="font-size: 4rem;">${monster.image || '🐉'}</div>`;
+            }
+        }
+
+        function renderMonsters() {
+            const grid = document.getElementById('monstersGrid');
+            if (!grid) return;
+
+            if (monsters.length === 0) {
+                grid.innerHTML = '<div style="color: white; text-align: center; padding: 3rem;">Пока нет монстров. Создайте первого! 🐉</div>';
+                return;
+            }
+
+            console.log('Отображаем монстров:', monsters.length);
+
+            grid.innerHTML = monsters.map(monster => `
+                <div class="monster-card" onclick="showMonsterDetail(${monster.id})">
+                    <div class="monster-image">${renderMonsterImage(monster)}</div>
+                    <div class="monster-info">
+                        <div class="monster-name">
+                            ${monster.name}
+                            ${monster.isRare ? '<span class="rare-badge">⭐ Редкий!</span>' : ''}
+                        </div>
+                        <div class="type-badge">${getTypeIcon(monster.type)} ${monster.type}</div>
+                        <div class="stat-bar"><div class="stat-fill" style="width: ${monster.power}%">⚔️ Сила: ${monster.power}</div></div>
+                        <div class="stat-bar"><div class="stat-fill" style="width: ${monster.hp / 10}%">❤️ HP: ${monster.hp}</div></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getTypeIcon(type) {
+            const icons = {'огненный': '🔥', 'ледяной': '❄️', 'природный': '🌿', 'темный': '🌑', 'светлый': '✨'};
+            return icons[type] || '⭐';
+        }
+
+        function showMonsterDetail(id) {
+            const monster = monsters.find(m => m.id === id);
+            if (!monster) return;
+            currentMonsterId = id;
+            document.getElementById('modalName').textContent = monster.name;
+            document.getElementById('modalBody').innerHTML = `
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <div style="font-size: 8rem;">${renderMonsterImage(monster)}</div>
+                </div>
+                <div class="type-badge">${getTypeIcon(monster.type)} ${monster.type} ${monster.isRare ? '⭐ Редкий!' : ''}</div>
+                <div class="stat-bar"><div class="stat-fill" style="width: ${monster.power}%">⚔️ Сила: ${monster.power}/100</div></div>
+                <div class="stat-bar"><div class="stat-fill" style="width: ${monster.hp / 10}%">❤️ Здоровье: ${monster.hp}/1000</div></div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px; margin-top: 1rem;">
+                    <strong>📖 Описание:</strong><br>${monster.description || 'Описание отсутствует'}
+                </div>
+                <div style="margin-top: 1rem;"><small>ID: ${monster.id}</small></div>
+            `;
+            document.getElementById('monsterModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('monsterModal').classList.remove('active');
+            currentMonsterId = null;
+        }
+
+        function deleteMonsterFromModal() {
+            if (currentMonsterId && confirm('Вы уверены, что хотите удалить этого монстра?')) {
+                monsters = monsters.filter(m => m.id !== currentMonsterId);
+                saveData();
+                renderMonsters();
+                updateStats();
+                showToast('Монстр удален из коллекции', 'success');
+                closeModal();
+            }
+        }
+
+        function createMonster(event) {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
+            const type = document.getElementById('type').value;
+            const power = parseInt(document.getElementById('power').value);
+            const hp = parseInt(document.getElementById('hp').value);
+            const isRare = document.getElementById('isRare').checked;
+            const description = document.getElementById('description').value;
+            let image = document.getElementById('imageUrl').value;
+
+            if (!image) {
+                image = getTypeIcon(type);
+            }
+
+            const newMonster = {
+                id: nextId++,
+                name, type, power, hp, isRare,
+                description: description || 'Нет описания',
+                image: image
+            };
+
+            monsters.push(newMonster);
+            saveData();
+            renderMonsters();
+            updateStats();
+            document.getElementById('monsterForm').reset();
+            document.getElementById('power').value = 50;
+            document.getElementById('hp').value = 300;
+            showToast(`Монстр "${name}" успешно создан!`, 'success');
+            setTimeout(() => showPage('monsters'), 1000);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach((btn, i) => {
+                btn.classList.remove('active');
+                if ((pageId === 'home' && i === 0) || (pageId === 'monsters' && i === 1) || (pageId === 'create' && i === 2)) {
+                    btn.classList.add('active');
+                }
+            });
+            if (pageId === 'monsters') renderMonsters();
+            if (pageId === 'home') updateStats();
+        }
+
+        // КНОПКА ДЛЯ СБРОСА ДАННЫХ (нажмите F12 и введите в консоль)
+        window.resetData = function() {
+            localStorage.removeItem('monsters_collection');
+            initDefaultMonsters();
+            saveData();
+            renderMonsters();
+            updateStats();
+            showToast('Данные сброшены! Показаны все 9 монстров', 'success');
+        };
+
+        document.getElementById('monsterForm').addEventListener('submit', createMonster);
+        window.onclick = (event) => { if (event.target === document.getElementById('monsterModal')) closeModal(); };
+
+        loadData();
+
+        // Выводим в консоль количество монстров
+        console.log('Всего монстров в коллекции:', monsters.length);
+    </script>
+</body>
+</html>
