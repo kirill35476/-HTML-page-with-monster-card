@@ -1,17 +1,36 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from models.models import Monster
-from typing import List
+from pydantic import BaseModel, Field
+from typing import List, Optional
 from contextlib import asynccontextmanager
+import os
+import shutil
+import uuid
 
-# Наша коллекция монстров
+
+# Модель монстра
+class Monster(BaseModel):
+    id: Optional[int] = None
+    name: str
+    type: str
+    power: int
+    hp: int
+    is_rare: bool = False
+    image: str  # имя файла картинки
+    description: Optional[str] = None
+
+
+# База данных монстров
 monsters_db = {}
 monster_counter = 0
 
+# Создаем папку для картинок если её нет
+os.makedirs("static/images", exist_ok=True)
 
-# Добавим несколько монстров для примера
+
+# Инициализация монстров
 def init_monsters():
     global monster_counter
     monsters = [
@@ -34,7 +53,7 @@ def init_monsters():
             description="Маленькая огненная милашка. Очень дружелюбна, но может обжечься."
         ),
         Monster(
-            name="Феникс",
+            name="Волшебный Феникс",
             type="огненный",
             power=88,
             hp=450,
@@ -61,6 +80,15 @@ def init_monsters():
             description="Маленькое ледяное создание, приносящее холод."
         ),
         Monster(
+            name="Лесной волк",
+            type="природный",
+            power=75,
+            hp=320,
+            is_rare=False,
+            image="wolf.png",
+            description="Благородный лесной волк, защитник древних лесов."
+        ),
+        Monster(
             name="Лесной дух",
             type="природный",
             power=70,
@@ -68,6 +96,24 @@ def init_monsters():
             is_rare=False,
             image="spirit.png",
             description="Дух леса, защитник природы."
+        ),
+        Monster(
+            name="Волшебный единорог",
+            type="светлый",
+            power=82,
+            hp=500,
+            is_rare=True,
+            image="unicorn.png",
+            description="Мифическое существо с целебным рогом. Приносит удачу."
+        ),
+        Monster(
+            name="Темный рыцарь",
+            type="темный",
+            power=90,
+            hp=700,
+            is_rare=True,
+            image="knight.png",
+            description="Загадочный рыцарь в черных доспехах. Появляется только в ночное время."
         )
     ]
 
@@ -77,107 +123,157 @@ def init_monsters():
         monsters_db[monster_counter] = monster.model_dump()
 
 
-# Правильный lifespan с подключением
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     print("🚀 Запускаем приложение...")
     init_monsters()
     print(f"📚 Загружено монстров: {len(monsters_db)}")
-    yield  # Приложение работает
-    # Shutdown
+    yield
     print("👋 Останавливаем приложение...")
 
 
-# Передаём lifespan в приложение
 app = FastAPI(title="Коллекция монстров", lifespan=lifespan)
-
-# Подключаем папки с шаблонами и статическими файлами
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-# 📄 Главная страница
+# Главная страница
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """Главная страница с приветствием"""
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "monsters_count": len(monsters_db)}
-    )
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "monsters_count": len(monsters_db)
+    })
 
 
-# 📄 Эндпоинт для списка всех монстров
+# Список монстров
 @app.get("/monsters", response_class=HTMLResponse)
 async def get_monsters_list(request: Request):
-    """
-    Показывает список всех монстров с ссылками на карточки
-    """
     monsters_list = list(monsters_db.values())
-    return templates.TemplateResponse(
-        "monsters_list.html",
-        {"request": request, "monsters": monsters_list}
-    )
+    return templates.TemplateResponse("monsters_list.html", {
+        "request": request,
+        "monsters": monsters_list
+    })
 
 
-# 📄 Эндпоинт для отображения карточки монстра
+# Карточка монстра
 @app.get("/monster/{monster_id}", response_class=HTMLResponse)
 async def get_monster_card(request: Request, monster_id: int):
-    """
-    Показывает красивую HTML страницу с карточкой монстра
-    """
     if monster_id not in monsters_db:
         raise HTTPException(status_code=404, detail="Монстр не найден")
-
-    monster = monsters_db[monster_id]
-    return templates.TemplateResponse(
-        "monster_card.html",
-        {"request": request, "monster": monster}
-    )
+    return templates.TemplateResponse("monster_card.html", {
+        "request": request,
+        "monster": monsters_db[monster_id]
+    })
 
 
-# ============= API эндпоинты (JSON) =============
-
+# API: получить всех монстров
 @app.get("/api/monsters", response_model=List[Monster])
 async def get_monsters_api():
-    """API для получения всех монстров в JSON"""
     return list(monsters_db.values())
 
 
-@app.get("/api/monsters/{monster_id}", response_model=Monster)
-async def get_monster_api(monster_id: int):
-    """API для получения монстра по ID в JSON"""
-    if monster_id not in monsters_db:
-        raise HTTPException(status_code=404, detail="Монстр не найден")
-    return monsters_db[monster_id]
-
-
-@app.post("/api/monsters", response_model=Monster)
-async def create_monster(monster: Monster):
-    """API для создания нового монстра"""
+# API: создать монстра с загрузкой картинки
+@app.post("/api/monsters")
+async def create_monster(
+        name: str = Form(...),
+        type: str = Form(...),
+        power: int = Form(...),
+        hp: int = Form(...),
+        is_rare: bool = Form(False),
+        description: str = Form(None),
+        image: UploadFile = File(None)
+):
     global monster_counter
+
+    # Сохраняем картинку
+    image_filename = "default.png"
+    if image and image.filename:
+        ext = image.filename.split('.')[-1]
+        image_filename = f"{uuid.uuid4().hex}.{ext}"
+        file_path = f"static/images/{image_filename}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
     monster_counter += 1
-    monster.id = monster_counter
+    monster = Monster(
+        id=monster_counter,
+        name=name,
+        type=type,
+        power=power,
+        hp=hp,
+        is_rare=is_rare,
+        image=image_filename,
+        description=description
+    )
     monsters_db[monster_counter] = monster.model_dump()
     return monster
 
 
-@app.put("/api/monsters/{monster_id}", response_model=Monster)
-async def update_monster(monster_id: int, monster: Monster):
-    """API для обновления монстра"""
+# API: обновить монстра и картинку
+@app.put("/api/monsters/{monster_id}")
+async def update_monster(
+        monster_id: int,
+        name: str = Form(...),
+        type: str = Form(...),
+        power: int = Form(...),
+        hp: int = Form(...),
+        is_rare: bool = Form(False),
+        description: str = Form(None),
+        image: UploadFile = File(None)
+):
     if monster_id not in monsters_db:
         raise HTTPException(status_code=404, detail="Монстр не найден")
 
-    monster.id = monster_id
-    monsters_db[monster_id] = monster.model_dump()
+    monster = monsters_db[monster_id]
+
+    # Если загружена новая картинка
+    if image and image.filename:
+        # Удаляем старую картинку
+        old_image = monster.get("image")
+        if old_image and old_image != "default.png":
+            old_path = f"static/images/{old_image}"
+            if os.path.exists(old_path):
+                os.remove(old_path)
+
+        # Сохраняем новую
+        ext = image.filename.split('.')[-1]
+        image_filename = f"{uuid.uuid4().hex}.{ext}"
+        file_path = f"static/images/{image_filename}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        monster["image"] = image_filename
+
+    # Обновляем остальные поля
+    monster["name"] = name
+    monster["type"] = type
+    monster["power"] = power
+    monster["hp"] = hp
+    monster["is_rare"] = is_rare
+    monster["description"] = description
+
+    monsters_db[monster_id] = monster
     return monster
 
 
+# API: удалить монстра и его картинку
 @app.delete("/api/monsters/{monster_id}")
 async def delete_monster(monster_id: int):
-    """API для удаления монстра"""
     if monster_id not in monsters_db:
         raise HTTPException(status_code=404, detail="Монстр не найден")
 
+    monster = monsters_db[monster_id]
+    # Удаляем картинку
+    if monster.get("image") and monster["image"] != "default.png":
+        image_path = f"static/images/{monster['image']}"
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
     del monsters_db[monster_id]
     return {"message": f"Монстр с ID {monster_id} удален"}
+
+
+# HTML форма для загрузки картинки (для удобства)
+@app.get("/upload", response_class=HTMLResponse)
+async def upload_form(request: Request):
+    return templates.TemplateResponse("upload_form.html", {"request": request})
