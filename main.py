@@ -28,9 +28,9 @@ os.makedirs("static/images", exist_ok=True)
 def init_monsters():
     global monster_counter
     monsters = [
-        Monster(name="Огненный дракон", type="огненный", power=95, hp=800, is_rare=True, image="/static/images/dragon.png", description="Древний дракон, дышащий огнём."),
+        Monster(name="Огненный дракон", type="огненный", power=95, hp=800, is_rare=True, image="images/dragon.png", description="Древний дракон, дышащий огнём."),
         Monster(name="Искорка", type="огненный", power=45, hp=200, is_rare=False, image="🔥", description="Маленькая огненная милашка."),
-        Monster(name="Волшебный Феникс", type="огненный", power=88, hp=450, is_rare=True, image="/static/images/phoenix.png", description="Волшебная птица из огня."),
+        Monster(name="Волшебный Феникс", type="огненный", power=88, hp=450, is_rare=True, image="images/phoenix.png", description="Волшебная птица из огня."),
         Monster(name="Ледяной великан", type="ледяной", power=85, hp=600, is_rare=True, image="❄️", description="Огромный великан из льдов."),
         Monster(name="Снежинка", type="ледяной", power=30, hp=150, is_rare=False, image="❄️", description="Маленькое ледяное создание."),
         Monster(name="Лесной волк", type="природный", power=75, hp=320, is_rare=False, image="🐺", description="Благородный лесной волк."),
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     print("👋 Останавливаем приложение...")
 
 app = FastAPI(title="Коллекция монстров", lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/images", StaticFiles(directory="images"), name="images")
 
 # Читаем HTML файл
 with open("monster_card.html", "r", encoding="utf-8") as f:
